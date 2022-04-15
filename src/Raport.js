@@ -1,41 +1,26 @@
 import React, { useState, useEffect } from "react";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
-import Box from "@mui/material/Box";
-import Modal from "@mui/material/Modal";
-import Button from "@mui/material/Button";
-import TextField from "@mui/material/TextField";
+import customElseIf from "./customElseIf";
+import ModalWindow from "./ModalWindow";
+import TableRaport from "./TableRaport";
+import fetchGetAllData from "./fetchGetAllData";
+function Raport(props) {
+  const { setHeadTitle, openAddRaportModal, setOpenAddRaportModal } = props;
 
-function Raport() {
   const [error, setError] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [items, setItems] = useState([]);
-
   const [open, setOpen] = React.useState(false);
+
   const [raport, setRaport] = React.useState(null);
   const [program, setProgram] = React.useState(null);
   const [programmer, setProgrammer] = React.useState(null);
 
+  const [programId, setProgramId] = React.useState(null);
+
   const [needRefresh, setNeedRefresh] = React.useState(true);
 
-  const style = {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: 400,
-    bgcolor: "background.paper",
-    border: "2px solid #000",
-    boxShadow: 24,
-    pt: 2,
-    px: 4,
-    pb: 3,
-  };
+  const currentDate = new Date().toLocaleDateString("en-CA");
+
   const handleOpen = (id, program, programmer, title, description, date) => {
     const raport = {
       id: id,
@@ -49,15 +34,17 @@ function Raport() {
     setOpen(true);
   };
   const handleClose = () => {
+    setRaport(null);
     setOpen(false);
   };
+
   const handleTitleFieldChange = (e) => {
     setRaport((raport) => ({
       ...raport,
       title: e.target.value,
     }));
   };
-  const handleDescriptionFieldChange = (e) => {
+  const handleTextFieldChange = (e) => {
     setRaport((raport) => ({
       ...raport,
       description: e.target.value,
@@ -69,153 +56,119 @@ function Raport() {
       date: e.target.value,
     }));
   };
-  const handleSendSubmit = () => {
+  const handleSendSubmitModify = async (e) => {
     var url = new URL("http://localhost:8080/raport/update");
     var body = {
       ...raport,
       program: program,
       programmer: programmer,
     };
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
 
-    console.log(body);
-    fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }).then((response) => {
-      if (!response.ok) {
-        alert("Nie udało się zmodyfikować Sprawozdania");
-      } else {
-        alert("Sprawozdanie zmienione");
+      if (response.ok) {
+        alert("Sprawozdanie zaktualizowane");
+        setOpen(false);
         setNeedRefresh(true);
-        handleClose();
+      } else {
+        alert("Nie udało się zaktualizować Sprawozdania");
       }
-    });
+    } catch (error) {
+      alert("Nie udało się zaktualizować Sprawozdania");
+    }
   };
+  const handleSendSubmitCreate = async () => {
+    const url = new URL("http://localhost:8080/raport/create");
+
+    var title = "Nowe Sprawozdanie";
+    var description = "Opis Sprawozdania";
+    var date = currentDate;
+    if (raport !== null) {
+      title = raport.title;
+      description = raport.description;
+      date = raport.date;
+    }
+    const body = {
+      title: title,
+      description: description,
+      date: date,
+      programmerId: 1,
+      programId: programId,
+    };
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+      if (response.ok) {
+        alert("Sprawozdanie dodane");
+        setOpenAddRaportModal(false);
+        setNeedRefresh(true);
+      } else {
+        alert("Nie udało się dodać Sprawozdania");
+      }
+    } catch (error) {
+      alert("Nie udało się dodać Sprawozdania");
+    }
+  };
+
   useEffect(() => {
     if (needRefresh === false) return;
+    fetchGetAllData("raport/getAll", setIsLoaded, setItems, setError);
 
-    fetch("http://localhost:8080/raport/getAll")
-      .then((res) => res.json())
-      .then(
-        (result) => {
-          setIsLoaded(true);
-          setItems(result);
-        },
-        (error) => {
-          setIsLoaded(true);
-          setError(error);
-        }
-      );
+    setHeadTitle("Raports");
     setNeedRefresh(false);
-  }, [needRefresh]);
+  }, [needRefresh, setHeadTitle]);
 
-  if (error) {
-    return <div>Error: {error.message}</div>;
-  } else if (!isLoaded) {
-    return <div>Loading...</div>;
-  } else {
-    return (
-      <React.Fragment>
-        <TableContainer component={Paper}>
-          <Table
-            sx={{ minWidth: 650, maxHeight: 1000 }}
-            aria-label="simple table"
-          >
-            <TableHead>
-              <TableRow key={0}>
-                <TableCell>Id Raportu</TableCell>
-                <TableCell>Nazwa Programu</TableCell>
-                <TableCell>Programista</TableCell>
-                <TableCell>Tytuł</TableCell>
-                <TableCell sx={{ minWidth: "500px" }}>Opis</TableCell>
-                <TableCell sx={{ minWidth: "80px" }}>Data</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {items.map((row) => (
-                <TableRow
-                  key={row.id}
-                  sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                  onClick={() =>
-                    handleOpen(
-                      row.id,
-                      row.program,
-                      row.programmer,
-                      row.title,
-                      row.description,
-                      row.date
-                    )
-                  }
-                >
-                  <TableCell>{row.id}</TableCell>
-                  <TableCell>{row.program.name}</TableCell>
-                  <TableCell>
-                    {row.programmer.name + " " + row.programmer.surname}
-                  </TableCell>
-                  <TableCell>{row.title}</TableCell>
-                  <TableCell
-                    style={{
-                      width: 200,
-                      whiteSpace: "normal",
-                      wordWrap: "break-word",
-                    }}
-                  >
-                    {row.description}
-                  </TableCell>
-                  <TableCell>{row.date}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        {open === true && (
-          <div>
-            <Modal
-              open={open}
-              onClose={handleClose}
-              aria-labelledby="parent-modal-title"
-              aria-describedby="parent-modal-description"
-            >
-              <Box sx={{ ...style, width: 1000 }}>
-                <TextField
-                  id="filled-textarea"
-                  label="Tytuł Sprawozdania"
-                  multiline
-                  variant="filled"
-                  style={{ width: 500 }}
-                  onChange={handleTitleFieldChange}
-                  defaultValue={raport.title}
-                />
-                <TextField
-                  id="filled-textarea"
-                  label="Opis"
-                  multiline
-                  defaultValue={raport.description}
-                  variant="filled"
-                  style={{ width: 1000 }}
-                  onChange={handleDescriptionFieldChange}
-                />
-                <TextField
-                  id="date"
-                  label="Data Wykonania"
-                  type="date"
-                  defaultValue={raport.date}
-                  sx={{ float: "left", width: 220, bottom: -10 }}
-                  onChange={handleDateChange}
-                />
-                <Button style={{ float: "right" }} onClick={handleSendSubmit}>
-                  Edytuj Sprawozdanie
-                </Button>
-              </Box>
-            </Modal>
-          </div>
-        )}
-      </React.Fragment>
-    );
-  }
+  return (
+    <React.Fragment>
+      {customElseIf(
+        error,
+        isLoaded,
+        <React.Fragment>
+          <TableRaport items={items} handleOpen={handleOpen} />
+          {open === true && (
+            <ModalWindow
+              handleClose={handleClose}
+              handleTitleFieldChange={handleTitleFieldChange}
+              title={raport.title}
+              handleTextFieldChange={handleTextFieldChange}
+              date={raport.date}
+              handleDateChange={handleDateChange}
+              handleSendSubmit={handleSendSubmitModify}
+              description={raport.description}
+              buttonText="Edytuj Sprawozdanie"
+            ></ModalWindow>
+          )}
+
+          {openAddRaportModal === true && (
+            <ModalWindow
+              handleClose={() => setOpenAddRaportModal(false)}
+              handleTitleFieldChange={handleTitleFieldChange}
+              title={"Nowe Sprawozdanie"}
+              handleTextFieldChange={handleTextFieldChange}
+              date={currentDate}
+              handleDateChange={handleDateChange}
+              handleSendSubmit={handleSendSubmitCreate}
+              description={"Opis Sprawozdania"}
+              buttonText="Dodaj Sprawozdanie"
+              setProgramId={setProgramId}
+              needlistOfPrograms={true}
+            ></ModalWindow>
+          )}
+        </React.Fragment>
+      )}
+    </React.Fragment>
+  );
 }
 
 export default Raport;
