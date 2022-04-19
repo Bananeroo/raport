@@ -9,9 +9,6 @@ function Programmer(props) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [items, setItems] = useState([]);
 
-  // Note: the empty deps array [] means
-  // this useEffect will run once
-  // similar to componentDidMount()
   useEffect(() => {
     fetchGetAllData("programmer/getAll", setIsLoaded, setItems, setError);
     setHeadTitle("Programmers");

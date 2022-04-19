@@ -9,7 +9,7 @@ import React from "react";
 
 export const menuListItems = (
   <React.Fragment>
-    <ListItemButton button component="a" href="/program">
+    <ListItemButton component="a" href="/program">
       <ListItemIcon>
         <TerminalIcon />
       </ListItemIcon>
@@ -17,7 +17,7 @@ export const menuListItems = (
         <ListItemText primary="Program" />
       </ListItem>
     </ListItemButton>
-    <ListItemButton button component="a" href="/programmer">
+    <ListItemButton component="a" href="/programmer">
       <ListItemIcon>
         <PeopleIcon />
       </ListItemIcon>
@@ -25,7 +25,7 @@ export const menuListItems = (
         <ListItemText primary="Programmer" />
       </ListItem>
     </ListItemButton>
-    <ListItemButton button component="a" href="/raport">
+    <ListItemButton component="a" href="/raport">
       <ListItemIcon>
         <BarChartIcon />
       </ListItemIcon>

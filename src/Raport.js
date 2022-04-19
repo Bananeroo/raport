@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import customElseIf from "./customElseIf";
-import ModalWindow from "./ModalWindow";
+import DialogWindow from "./DialogWindow";
 import TableRaport from "./TableRaport";
 import fetchGetAllData from "./fetchGetAllData";
+import DialogRequestStatus from "./DialogRequestStatus";
 function Raport(props) {
   const { setHeadTitle, openAddRaportModal, setOpenAddRaportModal } = props;
 
@@ -20,6 +21,23 @@ function Raport(props) {
   const [needRefresh, setNeedRefresh] = React.useState(true);
 
   const currentDate = new Date().toLocaleDateString("en-CA");
+  const [dialogRequestOpen, setDialogRequestOpen] = React.useState(false);
+  const [dialogRequestTitle, setDialogRequestTitle] = React.useState("");
+
+  const [date, setDate] = React.useState(currentDate);
+  const [description, setDescription] = React.useState("Opis Sprawozdania");
+  const [title, setTitle] = React.useState("Nowe Sprawozdanie");
+
+  const handleOpenDialogRequest = (title) => {
+    setDialogRequestTitle(title);
+    setDialogRequestOpen(true);
+  };
+
+  const resetNewRaportValue = () => {
+    setTitle("Nowe Sprawozdanie");
+    setDescription("Opis Sprawozdania");
+    setDate(currentDate);
+  };
 
   const handleOpen = (id, program, programmer, title, description, date) => {
     const raport = {
@@ -35,28 +53,33 @@ function Raport(props) {
   };
   const handleClose = () => {
     setRaport(null);
+    resetNewRaportValue();
     setOpen(false);
+    setOpenAddRaportModal(false);
   };
 
   const handleTitleFieldChange = (e) => {
+    setTitle(e.target.value);
     setRaport((raport) => ({
       ...raport,
       title: e.target.value,
     }));
   };
   const handleTextFieldChange = (e) => {
+    setDescription(e.target.value);
     setRaport((raport) => ({
       ...raport,
       description: e.target.value,
     }));
   };
   const handleDateChange = (e) => {
+    setDate(e.target.value);
     setRaport((raport) => ({
       ...raport,
       date: e.target.value,
     }));
   };
-  const handleSendSubmitModify = async (e) => {
+  const handleSendSubmitModify = async () => {
     var url = new URL("http://localhost:8080/raport/update");
     var body = {
       ...raport,
@@ -73,27 +96,21 @@ function Raport(props) {
       });
 
       if (response.ok) {
-        alert("Sprawozdanie zaktualizowane");
         setOpen(false);
+        handleOpenDialogRequest("Raport zmodyfikowany pomyślnie");
+        resetNewRaportValue();
+
         setNeedRefresh(true);
       } else {
-        alert("Nie udało się zaktualizować Sprawozdania");
+        handleOpenDialogRequest("Nie udało się zmodyfikować raportu");
       }
     } catch (error) {
-      alert("Nie udało się zaktualizować Sprawozdania");
+      handleOpenDialogRequest("Nie udało się zmodyfikować raportu");
     }
   };
   const handleSendSubmitCreate = async () => {
     const url = new URL("http://localhost:8080/raport/create");
 
-    var title = "Nowe Sprawozdanie";
-    var description = "Opis Sprawozdania";
-    var date = currentDate;
-    if (raport !== null) {
-      title = raport.title;
-      description = raport.description;
-      date = raport.date;
-    }
     const body = {
       title: title,
       description: description,
@@ -101,6 +118,7 @@ function Raport(props) {
       programmerId: 1,
       programId: programId,
     };
+    setProgramId(null);
     try {
       const response = await fetch(url, {
         method: "POST",
@@ -110,14 +128,15 @@ function Raport(props) {
         body: JSON.stringify(body),
       });
       if (response.ok) {
-        alert("Sprawozdanie dodane");
         setOpenAddRaportModal(false);
+        handleOpenDialogRequest("Nowy raport dodany");
+        resetNewRaportValue();
         setNeedRefresh(true);
       } else {
-        alert("Nie udało się dodać Sprawozdania");
+        handleOpenDialogRequest("Nie udało się dodać raportu");
       }
     } catch (error) {
-      alert("Nie udało się dodać Sprawozdania");
+      handleOpenDialogRequest("Nie udało się dodać raportu");
     }
   };
 
@@ -137,7 +156,8 @@ function Raport(props) {
         <React.Fragment>
           <TableRaport items={items} handleOpen={handleOpen} />
           {open === true && (
-            <ModalWindow
+            <DialogWindow
+              dialogTitle="Edytowanie Raportu"
               handleClose={handleClose}
               handleTitleFieldChange={handleTitleFieldChange}
               title={raport.title}
@@ -147,23 +167,31 @@ function Raport(props) {
               handleSendSubmit={handleSendSubmitModify}
               description={raport.description}
               buttonText="Edytuj Sprawozdanie"
-            ></ModalWindow>
+            ></DialogWindow>
           )}
 
           {openAddRaportModal === true && (
-            <ModalWindow
-              handleClose={() => setOpenAddRaportModal(false)}
+            <DialogWindow
+              dialogTitle="Dodawanie Nowego Raportu"
+              handleClose={handleClose}
               handleTitleFieldChange={handleTitleFieldChange}
-              title={"Nowe Sprawozdanie"}
+              title={title}
               handleTextFieldChange={handleTextFieldChange}
-              date={currentDate}
+              date={date}
               handleDateChange={handleDateChange}
               handleSendSubmit={handleSendSubmitCreate}
-              description={"Opis Sprawozdania"}
+              description={description}
               buttonText="Dodaj Sprawozdanie"
               setProgramId={setProgramId}
               needlistOfPrograms={true}
-            ></ModalWindow>
+            ></DialogWindow>
+          )}
+          {dialogRequestOpen === true && (
+            <DialogRequestStatus
+              open={dialogRequestOpen}
+              setOpen={setDialogRequestOpen}
+              title={dialogRequestTitle}
+            ></DialogRequestStatus>
           )}
         </React.Fragment>
       )}
