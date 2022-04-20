@@ -2,18 +2,21 @@ import React, { useEffect } from "react";
 
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
-import { Dialog, Grid } from "@mui/material";
-import Select from "react-select";
-import customElseIf from "./customElseIf";
-import fetchGetAllData from "./fetchGetAllData";
+import { Dialog, Grid, MenuItem } from "@mui/material";
+
+import ConditionalContentDisplay from "../ConditionalContentDisplay";
+import fetchGetAllData from "../fetchGetAllData";
 
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import FormControl from "@mui/material/FormControl";
 import FormHelperText from "@mui/material/FormHelperText";
+import IconButton from "@mui/material/IconButton";
+import CloseIcon from "@mui/icons-material/Close";
+import ListItemText from "@mui/material/ListItemText";
 
-function DialogWindow(props) {
+export default function RaportOperationDialog(props) {
   const {
     handleDateChange,
     handleSendSubmit,
@@ -29,7 +32,7 @@ function DialogWindow(props) {
     dialogTitle,
   } = props;
 
-  const [selectedProgram, setSelectedProgram] = React.useState(null);
+  const [selectedProgram, setSelectedProgram] = React.useState("");
 
   const [programListError, setProgramListError] = React.useState(null);
   const [programListIsLoaded, setProgramListIsLoaded] = React.useState(false);
@@ -42,8 +45,8 @@ function DialogWindow(props) {
   const [requestedDescError, setRequestedDescError] = React.useState(false);
 
   const changeSelectedProgram = (e) => {
-    setSelectedProgram({ value: e.value, label: e.label });
-    setProgramId(e.value);
+    setSelectedProgram(e.target.value);
+    setProgramId(e.target.value);
   };
   const isEmptyOrSpaces = (str) => {
     return str === null || str.match(/^ *$/) !== null;
@@ -66,7 +69,7 @@ function DialogWindow(props) {
     }
     setRequestedDateError(false);
     if (needlistOfPrograms) {
-      if (selectedProgram === null) {
+      if (selectedProgram === "") {
         setRequestedProgramError(true);
         return;
       }
@@ -75,13 +78,6 @@ function DialogWindow(props) {
 
     handleSendSubmit();
   };
-
-  var option;
-  if (programListIsLoaded) {
-    option = programList.map((row) => {
-      return { value: row.id, label: row.name };
-    });
-  }
 
   useEffect(() => {
     if (needlistOfPrograms) {
@@ -96,8 +92,20 @@ function DialogWindow(props) {
   return (
     <Dialog open={true} onClose={handleClose}>
       <DialogTitle>{dialogTitle}</DialogTitle>
+      <IconButton
+        onClick={handleClose}
+        sx={{
+          position: "absolute",
+          right: 8,
+          top: 8,
+          color: (theme) => theme.palette.grey[500],
+        }}
+      >
+        <CloseIcon />
+      </IconButton>
+
       <DialogContent>
-        <FormControl error={true}>
+        <FormControl>
           <Grid container spacing={2}>
             <Grid item xs={12}>
               <TextField
@@ -110,7 +118,9 @@ function DialogWindow(props) {
                 defaultValue={title}
               />
               {requestedTitleError && (
-                <FormHelperText>Tytuł jest wymagany!</FormHelperText>
+                <FormHelperText error={true}>
+                  Tytuł jest wymagany!
+                </FormHelperText>
               )}
             </Grid>
             <Grid item xs={12}>
@@ -125,7 +135,9 @@ function DialogWindow(props) {
                 inputProps={{ maxLength: 2000 }}
               />
               {requestedDescError && (
-                <FormHelperText>Opis jest wymagany!</FormHelperText>
+                <FormHelperText error={true}>
+                  Opis jest wymagany!
+                </FormHelperText>
               )}
             </Grid>
             <Grid item xs={9}>
@@ -137,35 +149,51 @@ function DialogWindow(props) {
                 onChange={handleDateChange}
               />
               {requestedDateError && (
-                <FormHelperText>Data jest wymagana!</FormHelperText>
+                <FormHelperText error={true}>
+                  Data jest wymagana!
+                </FormHelperText>
               )}
             </Grid>
 
-            <Grid item xs={9}>
-              {needlistOfPrograms === true
-                ? customElseIf(
-                    programListError,
-                    programListIsLoaded,
+            <Grid item xs={12}>
+              {needlistOfPrograms === true && (
+                <ConditionalContentDisplay
+                  error={programListError}
+                  isLoaded={programListIsLoaded}
+                  content={
                     <React.Fragment>
-                      <Select
-                        label="Program"
+                      <TextField
+                        sx={{ width: "100%" }}
+                        select
                         value={selectedProgram}
+                        label="Program"
                         onChange={changeSelectedProgram}
-                        options={option}
-                      />
+                      >
+                        {programList.map((row) => {
+                          return (
+                            <MenuItem key={row.id} value={row.id}>
+                              <ListItemText primary={row.name} />
+                            </MenuItem>
+                          );
+                        })}
+                      </TextField>
                       {requestedProgramError && (
-                        <FormHelperText>
-                          Pole program jest wymagane!
+                        <FormHelperText error={true}>
+                          Program jest wymagany!
                         </FormHelperText>
                       )}
                     </React.Fragment>
-                  )
-                : null}
+                  }
+                />
+              )}
             </Grid>
           </Grid>
         </FormControl>
       </DialogContent>
       <DialogActions>
+        <Button variant="outlined" onClick={handleClose}>
+          Anuluj
+        </Button>
         <Button variant="outlined" onClick={handleSend}>
           {buttonText}
         </Button>
@@ -173,5 +201,3 @@ function DialogWindow(props) {
     </Dialog>
   );
 }
-
-export default DialogWindow;

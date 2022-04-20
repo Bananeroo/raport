@@ -11,16 +11,13 @@ import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import Programmer from "./Programmer";
-import Raport from "./Raport";
-import Program from "./Program";
+import Programmer from "./programmer/Programmer";
+import Raport from "./raport/Raport";
+import Program from "./program/Program";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
-import { menuListItems } from "./menuListItems";
+import Navbar from "./Navbar";
 import Paper from "@mui/material/Paper";
-import { Button } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import { Grid } from "@mui/material";
 
 const drawerWidth = 240;
 
@@ -74,8 +71,6 @@ function DashboardContent() {
   const [title, setTitle] = React.useState(null);
   const [open, setOpen] = React.useState(false);
 
-  const [openAddRaportModal, setOpenAddRaportModal] = React.useState(false);
-
   const toggleDrawer = () => {
     setOpen(!open);
   };
@@ -109,23 +104,7 @@ function DashboardContent() {
               noWrap
               sx={{ flexGrow: 1 }}
             >
-              <Grid container spacing={2}>
-                <Grid item xs={9}>
-                  {title}
-                </Grid>
-                <Grid item xs={3}>
-                  {title === "Raports" && (
-                    <Button
-                      onClick={() => setOpenAddRaportModal(true)}
-                      color="secondary"
-                      variant="contained"
-                      startIcon={<AddIcon />}
-                    >
-                      Dodaj Raport
-                    </Button>
-                  )}
-                </Grid>
-              </Grid>
+              {title}
             </Typography>
           </Toolbar>
         </AppBar>
@@ -144,7 +123,7 @@ function DashboardContent() {
           </Toolbar>
           <Divider />
           <List component="nav">
-            {menuListItems}
+            <Navbar />
             <Divider sx={{ my: 1 }} />
           </List>
         </Drawer>
@@ -179,14 +158,8 @@ function DashboardContent() {
                   />
                   <Route
                     exact
-                    path="/raport"
-                    element={
-                      <Raport
-                        openAddRaportModal={openAddRaportModal}
-                        setOpenAddRaportModal={setOpenAddRaportModal}
-                        setHeadTitle={setTitle}
-                      />
-                    }
+                    path="/"
+                    element={<Raport setHeadTitle={setTitle} />}
                   />
                   <Route
                     exact

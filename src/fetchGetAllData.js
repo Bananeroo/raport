@@ -14,4 +14,5 @@ async function fetchGetAllData(url, setIsLoaded, setItems, setError) {
     setError(error);
   }
 }
+
 export default fetchGetAllData;

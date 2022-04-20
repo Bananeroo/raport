@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from "react";
-import customElseIf from "./customElseIf";
-import DialogWindow from "./DialogWindow";
+
 import TableRaport from "./TableRaport";
-import fetchGetAllData from "./fetchGetAllData";
-import DialogRequestStatus from "./DialogRequestStatus";
+import fetchGetAllData from "../fetchGetAllData";
+import DialogRequestStatus from "../DialogRequestStatus";
+import { Button } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import { Grid } from "@mui/material";
+import CustomElseIf from "../ConditionalContentDisplay";
+import RaportOperationDialog from "./RaportOperationDialog";
+import fetchPost from "../fetchPost";
 function Raport(props) {
-  const { setHeadTitle, openAddRaportModal, setOpenAddRaportModal } = props;
+  const { setHeadTitle } = props;
 
   const [error, setError] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -27,6 +32,13 @@ function Raport(props) {
   const [date, setDate] = React.useState(currentDate);
   const [description, setDescription] = React.useState("Opis Sprawozdania");
   const [title, setTitle] = React.useState("Nowe Sprawozdanie");
+
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+
+  const [openAddRaportModal, setOpenAddRaportModal] = React.useState(false);
+
+  const [numberOfRows, setNumberOfRows] = React.useState(0);
 
   const handleOpenDialogRequest = (title) => {
     setDialogRequestTitle(title);
@@ -80,37 +92,24 @@ function Raport(props) {
     }));
   };
   const handleSendSubmitModify = async () => {
-    var url = new URL("http://localhost:8080/raport/update");
-    var body = {
+    const body = {
       ...raport,
       program: program,
       programmer: programmer,
     };
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
+    const success = await fetchPost("raport/update", body);
 
-      if (response.ok) {
-        setOpen(false);
-        handleOpenDialogRequest("Raport zmodyfikowany pomyślnie");
-        resetNewRaportValue();
+    if (success) {
+      setOpen(false);
+      handleOpenDialogRequest("Raport zmodyfikowany pomyślnie");
+      resetNewRaportValue();
 
-        setNeedRefresh(true);
-      } else {
-        handleOpenDialogRequest("Nie udało się zmodyfikować raportu");
-      }
-    } catch (error) {
+      setNeedRefresh(true);
+    } else {
       handleOpenDialogRequest("Nie udało się zmodyfikować raportu");
     }
   };
   const handleSendSubmitCreate = async () => {
-    const url = new URL("http://localhost:8080/raport/create");
-
     const body = {
       title: title,
       description: description,
@@ -119,44 +118,65 @@ function Raport(props) {
       programId: programId,
     };
     setProgramId(null);
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
-      if (response.ok) {
-        setOpenAddRaportModal(false);
-        handleOpenDialogRequest("Nowy raport dodany");
-        resetNewRaportValue();
-        setNeedRefresh(true);
-      } else {
-        handleOpenDialogRequest("Nie udało się dodać raportu");
-      }
-    } catch (error) {
+    const success = await fetchPost("raport/create", body);
+
+    if (success) {
+      setOpenAddRaportModal(false);
+      handleOpenDialogRequest("Nowy raport dodany");
+      resetNewRaportValue();
+      setNeedRefresh(true);
+    } else {
       handleOpenDialogRequest("Nie udało się dodać raportu");
     }
   };
 
   useEffect(() => {
     if (needRefresh === false) return;
-    fetchGetAllData("raport/getAll", setIsLoaded, setItems, setError);
+    fetchGetAllData(
+      "raport/getAllPageable?page=" + page + "&size=" + rowsPerPage,
+      setIsLoaded,
+      setItems,
+      setError
+    );
+    fetchGetAllData(
+      "raport/getNumberOfRows",
+      setIsLoaded,
+      setNumberOfRows,
+      setError
+    );
 
-    setHeadTitle("Raports");
+    setHeadTitle("Raporty");
     setNeedRefresh(false);
-  }, [needRefresh, setHeadTitle]);
-
+  }, [needRefresh, setHeadTitle, page, rowsPerPage]);
   return (
-    <React.Fragment>
-      {customElseIf(
-        error,
-        isLoaded,
+    <CustomElseIf
+      error={error}
+      isLoaded={isLoaded}
+      content={
         <React.Fragment>
-          <TableRaport items={items} handleOpen={handleOpen} />
+          <Grid item xs={12} display="flex" justifyContent="right">
+            <Button
+              onClick={() => setOpenAddRaportModal(true)}
+              color="secondary"
+              variant="contained"
+              startIcon={<AddIcon />}
+            >
+              Dodaj Raport
+            </Button>
+          </Grid>
+
+          <TableRaport
+            numberOfRows={numberOfRows}
+            items={items}
+            handleOpen={handleOpen}
+            page={page}
+            setPage={setPage}
+            rowsPerPage={rowsPerPage}
+            setRowsPerPage={setRowsPerPage}
+            setNeedRefresh={setNeedRefresh}
+          />
           {open === true && (
-            <DialogWindow
+            <RaportOperationDialog
               dialogTitle="Edytowanie Raportu"
               handleClose={handleClose}
               handleTitleFieldChange={handleTitleFieldChange}
@@ -167,11 +187,11 @@ function Raport(props) {
               handleSendSubmit={handleSendSubmitModify}
               description={raport.description}
               buttonText="Edytuj Sprawozdanie"
-            ></DialogWindow>
+            />
           )}
 
           {openAddRaportModal === true && (
-            <DialogWindow
+            <RaportOperationDialog
               dialogTitle="Dodawanie Nowego Raportu"
               handleClose={handleClose}
               handleTitleFieldChange={handleTitleFieldChange}
@@ -184,18 +204,18 @@ function Raport(props) {
               buttonText="Dodaj Sprawozdanie"
               setProgramId={setProgramId}
               needlistOfPrograms={true}
-            ></DialogWindow>
+            />
           )}
           {dialogRequestOpen === true && (
             <DialogRequestStatus
               open={dialogRequestOpen}
               setOpen={setDialogRequestOpen}
               title={dialogRequestTitle}
-            ></DialogRequestStatus>
+            />
           )}
         </React.Fragment>
-      )}
-    </React.Fragment>
+      }
+    />
   );
 }
 

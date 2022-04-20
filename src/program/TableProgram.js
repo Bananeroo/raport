@@ -23,7 +23,6 @@ function TableProgram(props) {
             <TableRow
               key={row.id}
               sx={{
-                "&:last-child td, &:last-child th": { border: 0 },
                 "&:nth-of-type(odd)": { backgroundColor: " #BDC3C7" },
               }}
             >
