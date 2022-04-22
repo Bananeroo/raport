@@ -14,8 +14,9 @@ import CloseIcon from "@mui/icons-material/Close";
 
 export default function ProgrammerAddDialog(props) {
   const {
+    open,
+    setOpen,
     handleSendSubmit,
-    handleClose,
     programmerName,
     setProgrammerName,
     programmerSurname,
@@ -82,10 +83,10 @@ export default function ProgrammerAddDialog(props) {
   };
 
   return (
-    <Dialog open={true} onClose={handleClose}>
+    <Dialog open={open} onClose={() => setOpen(false)}>
       <DialogTitle>{"Dodawanie Programisty"}</DialogTitle>
       <IconButton
-        onClick={handleClose}
+        onClick={() => setOpen(false)}
         sx={{
           position: "absolute",
           right: 8,
@@ -177,7 +178,7 @@ export default function ProgrammerAddDialog(props) {
         </FormControl>
       </DialogContent>
       <DialogActions>
-        <Button variant="outlined" onClick={handleClose}>
+        <Button variant="outlined" onClick={() => setOpen(false)}>
           Anuluj
         </Button>
         <Button variant="outlined" onClick={handleSend}>

@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import ConditionalContentDisplay from "../ConditionalContentDisplay";
 import TableProgrammer from "./TableProgrammer";
-import fetchGetAllData from "../fetchGetAllData";
 import { Button } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import { Grid } from "@mui/material";
 import ProgrammerAddDialog from "./ProgrammerAddDialog";
 import DialogRequestStatus from "../DialogRequestStatus";
-import fetchPost from "../fetchPost";
-
+import { useSelector, useDispatch } from "react-redux";
+import {
+  programmerSelector,
+  fetchAllProgrammers,
+  fetchCreateProgrammer,
+} from "./programmerSlice";
 function Programmer(props) {
   const { setHeadTitle } = props;
-  const [error, setError] = useState(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [items, setItems] = useState([]);
 
   const [open, setOpen] = React.useState(false);
   const [title, setTtile] = React.useState("Nowy Program");
@@ -28,17 +28,31 @@ function Programmer(props) {
   const [programmerAge, setProgrammerAge] = React.useState(0);
   const [programmerPassword, setProgrammerPassword] = React.useState("");
 
+  const { status, createStatus } = useSelector(programmerSelector);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (createStatus === "success") {
+      setOpen(false);
+      handleOpenDialogRequest("Programista dodany");
+      setNeedRefresh(true);
+    } else if (createStatus === "failed") {
+      handleOpenDialogRequest("Nie udało się dodać Programisty");
+    }
+  }, [createStatus]);
+
   useEffect(() => {
     if (needRefresh === false) {
       return;
     }
-    fetchGetAllData("programmer/getAll", setIsLoaded, setItems, setError);
-    setHeadTitle("Programiści");
+    dispatch(fetchAllProgrammers());
     setNeedRefresh(false);
-  }, [setHeadTitle, needRefresh]);
-  const handleClose = () => {
-    setOpen(false);
-  };
+  }, [dispatch, needRefresh]);
+
+  useEffect(() => {
+    setHeadTitle("Programiści");
+  }, [setHeadTitle]);
+
   const handleOpenDialogRequest = (title) => {
     setDialogRequestTitle(title);
     setDialogRequestOpen(true);
@@ -52,65 +66,50 @@ function Programmer(props) {
       age: programmerAge,
       password: programmerPassword,
     };
-    const success = await fetchPost("programmer/create", body);
-
-    if (success) {
-      setOpen(false);
-      handleOpenDialogRequest("Programista dodany");
-      setNeedRefresh(true);
-    } else {
-      handleOpenDialogRequest("Nie udało się dodać Programisty");
-    }
+    dispatch(fetchCreateProgrammer(body));
   };
   const handleTitleFieldChange = (e) => {
     setTtile(e.target.value);
   };
   return (
-    <ConditionalContentDisplay
-      error={error}
-      isLoaded={isLoaded}
-      content={
-        <React.Fragment>
-          <Grid item xs={12} display="flex" justifyContent="right">
-            <Button
-              onClick={() => setOpen(true)}
-              color="secondary"
-              variant="contained"
-              startIcon={<AddIcon />}
-            >
-              Dodaj Programiste
-            </Button>
-          </Grid>
+    <ConditionalContentDisplay status={status}>
+      <Grid item xs={12} display="flex" justifyContent="right">
+        <Button
+          onClick={() => setOpen(true)}
+          color="secondary"
+          variant="contained"
+          startIcon={<AddIcon />}
+        >
+          Dodaj Programiste
+        </Button>
+      </Grid>
 
-          <TableProgrammer items={items} />
-          {open === true && (
-            <ProgrammerAddDialog
-              title={title}
-              handleTitleFieldChange={handleTitleFieldChange}
-              handleClose={handleClose}
-              handleSendSubmit={handleSendSubmit}
-              programmerName={programmerName}
-              setProgrammerName={setProgrammerName}
-              programmerSurname={programmerSurname}
-              setProgrammerSurname={setProgrammerSurname}
-              programmerEmail={programmerEmail}
-              setProgrammerEmail={setProgrammerEmail}
-              programmerAge={programmerAge}
-              setProgrammerAge={setProgrammerAge}
-              programmerPassword={programmerPassword}
-              setProgrammerPassword={setProgrammerPassword}
-            />
-          )}
-          {dialogRequestOpen === true && (
-            <DialogRequestStatus
-              open={dialogRequestOpen}
-              setOpen={setDialogRequestOpen}
-              title={dialogRequestTitle}
-            />
-          )}
-        </React.Fragment>
-      }
-    />
+      <TableProgrammer />
+
+      <ProgrammerAddDialog
+        title={title}
+        open={open}
+        setOpen={setOpen}
+        handleTitleFieldChange={handleTitleFieldChange}
+        handleSendSubmit={handleSendSubmit}
+        programmerName={programmerName}
+        setProgrammerName={setProgrammerName}
+        programmerSurname={programmerSurname}
+        setProgrammerSurname={setProgrammerSurname}
+        programmerEmail={programmerEmail}
+        setProgrammerEmail={setProgrammerEmail}
+        programmerAge={programmerAge}
+        setProgrammerAge={setProgrammerAge}
+        programmerPassword={programmerPassword}
+        setProgrammerPassword={setProgrammerPassword}
+      />
+
+      <DialogRequestStatus
+        open={dialogRequestOpen}
+        setOpen={setDialogRequestOpen}
+        title={dialogRequestTitle}
+      />
+    </ConditionalContentDisplay>
   );
 }
 

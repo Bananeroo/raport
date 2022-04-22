@@ -6,9 +6,10 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 
-function TableProgrammer(props) {
-  const { items } = props;
-
+import { useSelector } from "react-redux";
+import { programmerSelector } from "./programmerSlice";
+function TableProgrammer() {
+  const { list } = useSelector(programmerSelector);
   return (
     <React.Fragment>
       <TableContainer>
@@ -22,7 +23,7 @@ function TableProgrammer(props) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {items.map((row) => (
+            {list.map((row) => (
               <TableRow
                 key={row.id}
                 sx={{

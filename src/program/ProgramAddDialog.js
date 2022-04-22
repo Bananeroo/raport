@@ -13,7 +13,7 @@ import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 
 export default function ProgramAddDialog(props) {
-  const { handleSendSubmit, handleClose, title, handleTitleFieldChange } =
+  const { handleSendSubmit, title, handleTitleFieldChange, open, handleClose } =
     props;
 
   const [requestedTitleError, setRequestedTitleError] = React.useState(false);
@@ -33,7 +33,7 @@ export default function ProgramAddDialog(props) {
   };
 
   return (
-    <Dialog open={true} onClose={handleClose}>
+    <Dialog open={open} onClose={handleClose}>
       <DialogTitle>{"Dodawanie Programu"}</DialogTitle>
       <IconButton
         onClick={handleClose}

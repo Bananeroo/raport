@@ -5,7 +5,8 @@ import TextField from "@mui/material/TextField";
 import { Dialog, Grid, MenuItem } from "@mui/material";
 
 import ConditionalContentDisplay from "../ConditionalContentDisplay";
-import fetchGetAllData from "../fetchGetAllData";
+import { useSelector, useDispatch } from "react-redux";
+import { programSelector, fetchAllPrograms } from "../program/programSlice";
 
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -18,6 +19,7 @@ import ListItemText from "@mui/material/ListItemText";
 
 export default function RaportOperationDialog(props) {
   const {
+    open,
     handleDateChange,
     handleSendSubmit,
     handleClose,
@@ -26,23 +28,19 @@ export default function RaportOperationDialog(props) {
     handleTextFieldChange,
     date,
     description,
-    buttonText,
     needlistOfPrograms,
     setProgramId,
-    dialogTitle,
   } = props;
 
+  const { status, list } = useSelector(programSelector);
   const [selectedProgram, setSelectedProgram] = React.useState("");
-
-  const [programListError, setProgramListError] = React.useState(null);
-  const [programListIsLoaded, setProgramListIsLoaded] = React.useState(false);
-  const [programList, setProgramList] = React.useState([]);
-
   const [requestedProgramError, setRequestedProgramError] =
     React.useState(false);
   const [requestedDateError, setRequestedDateError] = React.useState(false);
   const [requestedTitleError, setRequestedTitleError] = React.useState(false);
   const [requestedDescError, setRequestedDescError] = React.useState(false);
+
+  const dispatch = useDispatch();
 
   const changeSelectedProgram = (e) => {
     setSelectedProgram(e.target.value);
@@ -75,23 +73,20 @@ export default function RaportOperationDialog(props) {
       }
       setRequestedProgramError(false);
     }
-
     handleSendSubmit();
   };
-
   useEffect(() => {
     if (needlistOfPrograms) {
-      fetchGetAllData(
-        "program/getAll",
-        setProgramListIsLoaded,
-        setProgramList,
-        setProgramListError
-      );
+      dispatch(fetchAllPrograms());
     }
-  }, [needlistOfPrograms]);
+  }, [needlistOfPrograms, dispatch]);
   return (
-    <Dialog open={true} onClose={handleClose}>
-      <DialogTitle>{dialogTitle}</DialogTitle>
+    <Dialog open={open} onClose={handleClose}>
+      <DialogTitle>
+        {needlistOfPrograms === true
+          ? "Dodawanie Raportu"
+          : "Edytowanie Raportu"}
+      </DialogTitle>
       <IconButton
         onClick={handleClose}
         sx={{
@@ -157,34 +152,26 @@ export default function RaportOperationDialog(props) {
 
             <Grid item xs={12}>
               {needlistOfPrograms === true && (
-                <ConditionalContentDisplay
-                  error={programListError}
-                  isLoaded={programListIsLoaded}
-                  content={
-                    <React.Fragment>
-                      <TextField
-                        sx={{ width: "100%" }}
-                        select
-                        value={selectedProgram}
-                        label="Program"
-                        onChange={changeSelectedProgram}
-                      >
-                        {programList.map((row) => {
-                          return (
-                            <MenuItem key={row.id} value={row.id}>
-                              <ListItemText primary={row.name} />
-                            </MenuItem>
-                          );
-                        })}
-                      </TextField>
-                      {requestedProgramError && (
-                        <FormHelperText error={true}>
-                          Program jest wymagany!
-                        </FormHelperText>
-                      )}
-                    </React.Fragment>
-                  }
-                />
+                <ConditionalContentDisplay status={status}>
+                  <TextField
+                    sx={{ width: "100%" }}
+                    select
+                    value={selectedProgram}
+                    label="Program"
+                    onChange={changeSelectedProgram}
+                  >
+                    {list.map((row) => (
+                      <MenuItem key={row.id} value={row.id}>
+                        <ListItemText primary={row.name} />
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  {requestedProgramError && (
+                    <FormHelperText error={true}>
+                      Program jest wymagany!
+                    </FormHelperText>
+                  )}
+                </ConditionalContentDisplay>
               )}
             </Grid>
           </Grid>
@@ -195,7 +182,7 @@ export default function RaportOperationDialog(props) {
           Anuluj
         </Button>
         <Button variant="outlined" onClick={handleSend}>
-          {buttonText}
+          {needlistOfPrograms === true ? "Dodaj Raport" : "Edytuj Raport"}
         </Button>
       </DialogActions>
     </Dialog>

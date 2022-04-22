@@ -1,11 +1,14 @@
 function ConditionalContentDisplay(props) {
-  const { error, isLoaded, content } = props;
-  return error ? (
-    <div>Error: {error.message}</div>
-  ) : !isLoaded ? (
+  const { status } = props;
+
+  return status === "failed" ? (
+    <div>Nie udało się wczytać danych !!</div>
+  ) : status === "loading" ? (
     <div>Loading...</div>
+  ) : status === "success" ? (
+    props.children
   ) : (
-    content
+    ""
   );
 }
 export default ConditionalContentDisplay;

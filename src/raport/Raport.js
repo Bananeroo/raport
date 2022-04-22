@@ -1,23 +1,34 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 
 import TableRaport from "./TableRaport";
-import fetchGetAllData from "../fetchGetAllData";
 import DialogRequestStatus from "../DialogRequestStatus";
 import { Button } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import { Grid } from "@mui/material";
-import CustomElseIf from "../ConditionalContentDisplay";
+import ConditionalContentDisplay from "../ConditionalContentDisplay";
 import RaportOperationDialog from "./RaportOperationDialog";
-import fetchPost from "../fetchPost";
+import { useSelector, useDispatch } from "react-redux";
+import {
+  raportSelector,
+  fetchAllRaport,
+  fetchCreateRaport,
+  fetchModifyRaport,
+  fetchDeleteRaport,
+} from "./raportSlice";
+import RaportDeleteDialog from "./RaportDeleteDialog";
+
 function Raport(props) {
   const { setHeadTitle } = props;
 
-  const [error, setError] = useState(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [items, setItems] = useState([]);
   const [open, setOpen] = React.useState(false);
+  const [openDelete, setOpenDelete] = React.useState(false);
 
-  const [raport, setRaport] = React.useState(null);
+  const [raport, setRaport] = React.useState({
+    id: 0,
+    title: "title",
+    description: "description",
+    date: "date",
+  });
   const [program, setProgram] = React.useState(null);
   const [programmer, setProgrammer] = React.useState(null);
 
@@ -33,12 +44,55 @@ function Raport(props) {
   const [description, setDescription] = React.useState("Opis Sprawozdania");
   const [title, setTitle] = React.useState("Nowe Sprawozdanie");
 
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(5);
-
   const [openAddRaportModal, setOpenAddRaportModal] = React.useState(false);
 
-  const [numberOfRows, setNumberOfRows] = React.useState(0);
+  const { createStatus, modifyStatus, status, deleteStatus } =
+    useSelector(raportSelector);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (createStatus === "success") {
+      setOpenAddRaportModal(false);
+      handleOpenDialogRequest("Nowy raport dodany");
+      resetNewRaportValue();
+      setNeedRefresh(true);
+    } else if (createStatus === "failed") {
+      handleOpenDialogRequest("Nie udało się dodać raportu");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createStatus]);
+
+  useEffect(() => {
+    if (modifyStatus === "success") {
+      setOpen(false);
+      handleOpenDialogRequest("Raport zmodyfikowany pomyślnie");
+      resetNewRaportValue();
+      setNeedRefresh(true);
+    } else if (modifyStatus === "failed") {
+      handleOpenDialogRequest("Nie udało się zmodyfikować raportu");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modifyStatus]);
+
+  useEffect(() => {
+    if (deleteStatus === "success") {
+      setOpenDelete(false);
+      handleOpenDialogRequest("Raport usunięty pomyślnie");
+      resetNewRaportValue();
+      setNeedRefresh(true);
+    } else if (deleteStatus === "failed") {
+      handleOpenDialogRequest("Nie udało się usunąć raportu");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deleteStatus]);
+
+  useEffect(() => {
+    if (needRefresh === false) {
+      return;
+    }
+    dispatch(fetchAllRaport());
+    setNeedRefresh(false);
+  }, [dispatch, needRefresh]);
 
   const handleOpenDialogRequest = (title) => {
     setDialogRequestTitle(title);
@@ -63,11 +117,30 @@ function Raport(props) {
     setProgrammer(programmer);
     setOpen(true);
   };
+
+  const handleOpenDelete = (id, title) => {
+    const raport = {
+      id: id,
+      title: title,
+    };
+    setRaport(raport);
+    setOpenDelete(true);
+  };
+
   const handleClose = () => {
-    setRaport(null);
+    setRaport({
+      id: 0,
+      title: "title",
+      description: "description",
+      date: "date",
+    });
     resetNewRaportValue();
     setOpen(false);
     setOpenAddRaportModal(false);
+  };
+
+  const handleCloseDelete = () => {
+    setOpenDelete(false);
   };
 
   const handleTitleFieldChange = (e) => {
@@ -97,17 +170,7 @@ function Raport(props) {
       program: program,
       programmer: programmer,
     };
-    const success = await fetchPost("raport/update", body);
-
-    if (success) {
-      setOpen(false);
-      handleOpenDialogRequest("Raport zmodyfikowany pomyślnie");
-      resetNewRaportValue();
-
-      setNeedRefresh(true);
-    } else {
-      handleOpenDialogRequest("Nie udało się zmodyfikować raportu");
-    }
+    dispatch(fetchModifyRaport(body));
   };
   const handleSendSubmitCreate = async () => {
     const body = {
@@ -118,104 +181,79 @@ function Raport(props) {
       programId: programId,
     };
     setProgramId(null);
-    const success = await fetchPost("raport/create", body);
-
-    if (success) {
-      setOpenAddRaportModal(false);
-      handleOpenDialogRequest("Nowy raport dodany");
-      resetNewRaportValue();
-      setNeedRefresh(true);
-    } else {
-      handleOpenDialogRequest("Nie udało się dodać raportu");
-    }
+    dispatch(fetchCreateRaport(body));
+  };
+  const handleSendSubmitDelete = async () => {
+    const body = {
+      id: raport.id,
+    };
+    console.log(raport.id);
+    dispatch(fetchDeleteRaport(body, raport.id));
   };
 
   useEffect(() => {
-    if (needRefresh === false) return;
-    fetchGetAllData(
-      "raport/getAllPageable?page=" + page + "&size=" + rowsPerPage,
-      setIsLoaded,
-      setItems,
-      setError
-    );
-    fetchGetAllData(
-      "raport/getNumberOfRows",
-      setIsLoaded,
-      setNumberOfRows,
-      setError
-    );
-
     setHeadTitle("Raporty");
-    setNeedRefresh(false);
-  }, [needRefresh, setHeadTitle, page, rowsPerPage]);
+  }, [setHeadTitle]);
   return (
-    <CustomElseIf
-      error={error}
-      isLoaded={isLoaded}
-      content={
-        <React.Fragment>
-          <Grid item xs={12} display="flex" justifyContent="right">
-            <Button
-              onClick={() => setOpenAddRaportModal(true)}
-              color="secondary"
-              variant="contained"
-              startIcon={<AddIcon />}
-            >
-              Dodaj Raport
-            </Button>
-          </Grid>
+    <ConditionalContentDisplay status={status}>
+      <Grid item xs={12} display="flex" justifyContent="right">
+        <Button
+          onClick={() => setOpenAddRaportModal(true)}
+          color="secondary"
+          variant="contained"
+          startIcon={<AddIcon />}
+        >
+          Dodaj Raport
+        </Button>
+      </Grid>
 
-          <TableRaport
-            numberOfRows={numberOfRows}
-            items={items}
-            handleOpen={handleOpen}
-            page={page}
-            setPage={setPage}
-            rowsPerPage={rowsPerPage}
-            setRowsPerPage={setRowsPerPage}
-            setNeedRefresh={setNeedRefresh}
-          />
-          {open === true && (
-            <RaportOperationDialog
-              dialogTitle="Edytowanie Raportu"
-              handleClose={handleClose}
-              handleTitleFieldChange={handleTitleFieldChange}
-              title={raport.title}
-              handleTextFieldChange={handleTextFieldChange}
-              date={raport.date}
-              handleDateChange={handleDateChange}
-              handleSendSubmit={handleSendSubmitModify}
-              description={raport.description}
-              buttonText="Edytuj Sprawozdanie"
-            />
-          )}
+      <TableRaport
+        handleOpen={handleOpen}
+        handleOpenDelete={handleOpenDelete}
+      />
 
-          {openAddRaportModal === true && (
-            <RaportOperationDialog
-              dialogTitle="Dodawanie Nowego Raportu"
-              handleClose={handleClose}
-              handleTitleFieldChange={handleTitleFieldChange}
-              title={title}
-              handleTextFieldChange={handleTextFieldChange}
-              date={date}
-              handleDateChange={handleDateChange}
-              handleSendSubmit={handleSendSubmitCreate}
-              description={description}
-              buttonText="Dodaj Sprawozdanie"
-              setProgramId={setProgramId}
-              needlistOfPrograms={true}
-            />
-          )}
-          {dialogRequestOpen === true && (
-            <DialogRequestStatus
-              open={dialogRequestOpen}
-              setOpen={setDialogRequestOpen}
-              title={dialogRequestTitle}
-            />
-          )}
-        </React.Fragment>
-      }
-    />
+      <RaportOperationDialog
+        open={open}
+        dialogTitle="Edytowanie Raportu"
+        handleClose={handleClose}
+        handleTitleFieldChange={handleTitleFieldChange}
+        title={raport.title}
+        handleTextFieldChange={handleTextFieldChange}
+        date={raport.date}
+        handleDateChange={handleDateChange}
+        handleSendSubmit={handleSendSubmitModify}
+        description={raport.description}
+        buttonText="Edytuj Sprawozdanie"
+      />
+
+      <RaportOperationDialog
+        open={openAddRaportModal}
+        dialogTitle="Dodawanie Nowego Raportu"
+        handleClose={handleClose}
+        handleTitleFieldChange={handleTitleFieldChange}
+        title={title}
+        handleTextFieldChange={handleTextFieldChange}
+        date={date}
+        handleDateChange={handleDateChange}
+        handleSendSubmit={handleSendSubmitCreate}
+        description={description}
+        buttonText="Dodaj Sprawozdanie"
+        setProgramId={setProgramId}
+        needlistOfPrograms={true}
+      />
+      <RaportDeleteDialog
+        open={openDelete}
+        raport={raport}
+        handleSendSubmit={handleSendSubmitDelete}
+        handleClose={handleCloseDelete}
+      ></RaportDeleteDialog>
+
+      <DialogRequestStatus
+        open={dialogRequestOpen}
+        setOpen={setDialogRequestOpen}
+        title={dialogRequestTitle}
+      />
+    </ConditionalContentDisplay>
   );
 }
 

@@ -5,9 +5,11 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
+import { useSelector } from "react-redux";
+import { programSelector } from "./programSlice";
 
 function TableProgram(props) {
-  const { items } = props;
+  const { list } = useSelector(programSelector);
 
   return (
     <TableContainer>
@@ -19,7 +21,7 @@ function TableProgram(props) {
           </TableRow>
         </TableHead>
         <TableBody>
-          {items.map((row) => (
+          {list.map((row) => (
             <TableRow
               key={row.id}
               sx={{
